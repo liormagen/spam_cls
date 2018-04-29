@@ -186,7 +186,7 @@ for idx, doc in enumerate(x_train_):
 
 max_len = round(lengths / idx)
 # Maybe I should get the average length of a spam document VS a non spam document
-print('Average document length: %s' % max_len)
+print('Average document length: %s\n' % max_len)
 
 x_train, x_test, y_train, y_test = train_test_split(x_train_, y_train,
                                                     test_size=test_size)
