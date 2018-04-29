@@ -2,9 +2,9 @@ import pandas as pd
 from keras.preprocessing.text import text_to_word_sequence
 from nltk import SnowballStemmer, re, downloader
 from nltk.corpus import stopwords
-from sklearn.cross_validation import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import LinearSVC
