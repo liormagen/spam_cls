@@ -1,27 +1,23 @@
 import os
 import pandas as pd
 import logging
-import numpy as np
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
 from statsmodels.tsa.ar_model import AR
-from statsmodels.tsa.arima_model import ARIMA
-import matplotlib.pylab as plt
-from matplotlib.pylab import rcParams
 import math
 
 DATA_PATH = os.path.join(os.getcwd(), 'data', 'productsPrices.csv')
 
+
 # This is a time series regression problem where I need to forecast the next day price
-#TODO: Great tutorial for such problems
-#TODO: Add timing to each part
-#TODO: https://datascienceplus.com/linear-regression-in-python-predict-the-bay-areas-home-prices/
-#TODO: https://towardsdatascience.com/create-a-model-to-predict-house-prices-using-python-d34fe8fad88f
+# TODO: Great tutorial for such problems
+# TODO: Add timing to each part
+# TODO: https://datascienceplus.com/linear-regression-in-python-predict-the-bay-areas-home-prices/
+# TODO: https://towardsdatascience.com/create-a-model-to-predict-house-prices-using-python-d34fe8fad88f
 
 
 class PredictPrices(object):
-    def __init__(self, test_size=.2, data_path=None, inspect_data=False, visualize_data=False, n_estimators=10, number_of_test_values=1):
+    def __init__(self, test_size=.2, data_path=None, inspect_data=False, visualize_data=False, n_estimators=10,
+                 number_of_test_values=1):
         self.logger = logging.getLogger('predict_prices_logger1')
         print('Prices prediction process starts')
         self.data_path = data_path
@@ -41,12 +37,13 @@ class PredictPrices(object):
         optimized_maxlag = 0
         for i in range(1, len(x_train)):
             self.model = model.fit(maxlag=i, disp=False)
-            # for method in []
             y_predicted = self.predict(history)
             temp_diff = abs(y_predicted - x_test)
+
             if temp_diff < min_diff:
                 min_diff = temp_diff
                 optimized_maxlag = i
+
         model = model.fit(maxlag=optimized_maxlag, disp=False)
         return model, history
 
@@ -80,7 +77,7 @@ class PredictPrices(object):
             x_test_predicted.append(self.predict(history))
         predictions_error = mean_squared_error(x_test, x_test_predicted, multioutput='raw_values')
         for x_test_, x_predicted in zip(x_test, x_test_predicted):
-            print('Predicted value: %s, real value: %s' % (x_predicted, x_test_))
+            print('Predicted value: %.3f, real value: %s' % (x_predicted, x_test_))
             print('Abs diff between prediction and true value: %.3f\n' % (abs(x_test_ - x_predicted)))
         # print('Test MSE: %.3f' % predictions_error)
 
@@ -104,19 +101,6 @@ class PredictPrices(object):
             raise TypeError('Visualize data must be Boolean')
         if not isinstance(self.n_estimators, int):
             raise TypeError('The number of estimators must an integer')
-
-
-
-# Product 1:13019
-# Product 2: 26266
-# Product 3: 40993
-# Product 4: 3005058
-# Product 5: 22685
-# Product 6: 33372
-# Product 7: 25496
-# Product 8: 145638
-# Product 9: 166472
-# Product 10: 201760
 
 
 if __name__ == '__main__':
