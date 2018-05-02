@@ -9,6 +9,7 @@ from statsmodels.tsa.ar_model import AR
 from statsmodels.tsa.arima_model import ARIMA
 import matplotlib.pylab as plt
 from matplotlib.pylab import rcParams
+import math
 
 DATA_PATH = os.path.join(os.getcwd(), 'data', 'productsPrices.csv')
 
@@ -33,11 +34,21 @@ class PredictPrices(object):
         self.products = []
         self.model = None
 
-    def train(self, x_train):
+    def train(self, x_train, x_test):
         model = AR(x_train)
-        model_fit = model.fit(maxlag=6, disp=False)
         history = [x_train[i] for i in range(len(x_train))]
-        return model_fit, history
+        min_diff = math.inf
+        optimized_maxlag = 0
+        for i in range(1, len(x_train)):
+            self.model = model.fit(maxlag=i, disp=False)
+            # for method in []
+            y_predicted = self.predict(history)
+            temp_diff = abs(y_predicted - x_test)
+            if temp_diff < min_diff:
+                min_diff = temp_diff
+                optimized_maxlag = i
+        model = model.fit(maxlag=optimized_maxlag, disp=False)
+        return model, history
 
     def predict(self, history):
         coef = self.model.params
@@ -65,7 +76,7 @@ class PredictPrices(object):
         for product, values in train_per_product.items():
             x_train = values[:-self.number_of_test_values]
             x_test.append(values[-self.number_of_test_values])
-            self.model, history = self.train(x_train)
+            self.model, history = self.train(x_train, values[-self.number_of_test_values])
             x_test_predicted.append(self.predict(history))
         predictions_error = mean_squared_error(x_test, x_test_predicted, multioutput='raw_values')
         for x_test_, x_predicted in zip(x_test, x_test_predicted):
