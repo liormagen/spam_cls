@@ -2,13 +2,11 @@ import pandas as pd
 from keras.preprocessing.text import text_to_word_sequence
 from nltk import SnowballStemmer, re, downloader
 from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import LinearSVC
-import numpy as np
 import matplotlib.pyplot as plt
 import statistics
 import os
@@ -65,12 +63,10 @@ def is_long_number(text, threshold=1, flag_res=False):
     return text
 
 
-max_features = 800
-test_size = .2
-
 # Import data
 current_path = os.getcwd()
-train = pd.read_csv(r"D:\Source Code\spam_cls\data\interviewClassificationTask.csv", encoding='ISO-8859-1')
+data_path = os.path.join(current_path, 'data', 'interviewClassificationTask.csv')
+train = pd.read_csv(data_path, encoding='ISO-8859-1')
 
 fields = ['v1', 'v2_concat']
 
@@ -172,6 +168,8 @@ print('URLs exists in %s/%s of the non-spam docs' % (sum(i > 0 for i in non_spam
 lengths = 0
 stem_it = True
 sw = clean_sw()
+max_features = 800
+test_size = .2
 # Clean repeating chars - looooooooooooooooooove -> love
 pattern = re.compile(r"(.)\1{2,}", re.DOTALL)
 
@@ -189,12 +187,11 @@ max_len = round(lengths / idx)
 print('Average document length: %s\n' % max_len)
 
 x_train, x_test, y_train, y_test = train_test_split(x_train_, y_train,
-                                                    test_size=test_size)
+                                                    test_size=test_size, random_state=42)
 
 # I'll use the vectorizer while keeping upper case
 input_vectorizer = CountVectorizer(tokenizer=trivial_tokenizer, max_features=max_features, lowercase=False)
 tfidf = TfidfTransformer()
-digits_counter = FunctionTransformer(validate=False)
 linSVC = LinearSVC()
 pipeline = [('Vectorizer', input_vectorizer), ('TFIDF', tfidf), ('LinSVC', linSVC)]
 model = Pipeline(pipeline)
