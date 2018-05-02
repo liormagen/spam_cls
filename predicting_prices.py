@@ -5,6 +5,8 @@ from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.ar_model import AR
 import math
 
+from statsmodels.tsa.arima_model import ARMA
+
 DATA_PATH = os.path.join(os.getcwd(), 'data', 'productsPrices.csv')
 
 
@@ -35,16 +37,24 @@ class PredictPrices(object):
         history = [x_train[i] for i in range(len(x_train))]
         min_diff = math.inf
         optimized_maxlag = 0
+        best_trend = None
         for i in range(1, len(x_train)):
-            self.model = model.fit(maxlag=i, disp=False)
-            y_predicted = self.predict(history)
-            temp_diff = abs(y_predicted - x_test)
+            for trend in [None, 'nc']:
+                if trend is None:
+                    self.model = model.fit(maxlag=i, disp=False)
+                else:
+                    self.model = model.fit(maxlag=i, disp=False, trend=trend)
+                y_predicted = self.predict(history)
+                temp_diff = abs(y_predicted - x_test)
 
-            if temp_diff < min_diff:
-                min_diff = temp_diff
-                optimized_maxlag = i
-
-        model = model.fit(maxlag=optimized_maxlag, disp=False)
+                if temp_diff < min_diff:
+                    best_trend = trend
+                    min_diff = temp_diff
+                    optimized_maxlag = i
+        if best_trend is None:
+            model = model.fit(maxlag=optimized_maxlag, disp=False)
+        else:
+            model = model.fit(maxlag=optimized_maxlag, disp=False, trend=best_trend)
         return model, history
 
     def predict(self, history):
