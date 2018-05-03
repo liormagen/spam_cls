@@ -1,11 +1,10 @@
 import os
 import pandas as pd
 import logging
-from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.ar_model import AR
 import math
+import matplotlib.pyplot as plt
 
-from statsmodels.tsa.arima_model import ARMA
 
 DATA_PATH = os.path.join(os.getcwd(), 'data', 'productsPrices.csv')
 
@@ -31,35 +30,42 @@ class PredictPrices(object):
         self.validate_input()
         self.products = []
         self.model = None
+        self.model_fit = None
 
     def train(self, x_train, x_test):
-        model = AR(x_train)
+        self.model = AR(x_train)
         history = [x_train[i] for i in range(len(x_train))]
         min_diff = math.inf
         optimized_maxlag = 0
-        best_trend = None
+        best_trend = vanilla_predictor = None
         for i in range(1, len(x_train)):
             for trend in [None, 'nc']:
-                if trend is None:
-                    self.model = model.fit(maxlag=i, disp=False)
-                else:
-                    self.model = model.fit(maxlag=i, disp=False, trend=trend)
-                y_predicted = self.predict(history)
-                temp_diff = abs(y_predicted - x_test)
+                for vanilla in [True, False]:
+                    if trend is None:
+                        self.model_fit = self.model.fit(maxlag=i, disp=False)
+                    else:
+                        self.model_fit = self.model.fit(maxlag=i, disp=False, trend=trend)
+                    y_predicted = self.predict(history, vanilla_predictor=vanilla)
+                    # y_predicted = self.predict(history)
+                    temp_diff = abs(y_predicted - x_test)
 
-                if temp_diff < min_diff:
-                    best_trend = trend
-                    min_diff = temp_diff
-                    optimized_maxlag = i
+                    if temp_diff < min_diff:
+                        best_trend = trend
+                        min_diff = temp_diff
+                        optimized_maxlag = i
+                        vanilla_predictor = vanilla
         if best_trend is None:
-            model = model.fit(maxlag=optimized_maxlag, disp=False)
+            self.model_fit = self.model.fit(maxlag=optimized_maxlag, disp=False)
         else:
-            model = model.fit(maxlag=optimized_maxlag, disp=False, trend=best_trend)
-        return model, history
+            self.model_fit = self.model.fit(maxlag=optimized_maxlag, disp=False, trend=best_trend)
+        return self.model_fit, history, vanilla_predictor
 
-    def predict(self, history):
-        coef = self.model.params
+    def predict(self, history, vanilla_predictor=False):
+        coef = self.model_fit.params
+        if vanilla_predictor:
+            return self.model.predict(params=coef)[0]
         yhat = coef[0]
+
         for i in range(1, len(coef)):
             yhat += coef[i] * history[-i]
         return yhat
@@ -83,9 +89,8 @@ class PredictPrices(object):
         for product, values in train_per_product.items():
             x_train = values[:-self.number_of_test_values]
             x_test.append(values[-self.number_of_test_values])
-            self.model, history = self.train(x_train, values[-self.number_of_test_values])
-            x_test_predicted.append(self.predict(history))
-        predictions_error = mean_squared_error(x_test, x_test_predicted, multioutput='raw_values')
+            self.model_fit, history, vanilla_predictor = self.train(x_train, values[-self.number_of_test_values])
+            x_test_predicted.append(self.predict(history, vanilla_predictor))
         for x_test_, x_predicted in zip(x_test, x_test_predicted):
             print('Predicted value: %.3f, real value: %s' % (x_predicted, x_test_))
             print('Abs diff between prediction and true value: %.3f\n' % (abs(x_test_ - x_predicted)))
